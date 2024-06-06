@@ -7,9 +7,6 @@ import {
   Keypair,
   Connection,
   Transaction,
-  VersionedTransaction,
-  AddressLookupTableAccount,
-  TransactionInstruction,
   ConnectionConfig,
 } from "@solana/web3.js";
 import {
@@ -20,6 +17,9 @@ import {
 require("dotenv").config();
 
 const VAULT_SEED = "vault-authority";
+
+export const JLP_ADDRESS = new PublicKey("27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4");
+export const USDC_ADDRESS = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 
 const walletKeypair = Keypair.fromSecretKey(
   Uint8Array.from(
@@ -41,7 +41,7 @@ export const provider = new AnchorProvider(connection, wallet, {
   commitment: "confirmed",
 });
 anchor.setProvider(provider);
-export const program = anchor.workspace.Genius as Program<MeteoraCpi>;
+export const program = anchor.workspace.MeteoraCpi as Program<MeteoraCpi>;
 
 console.log("rpc: ", process.env.RPC_URL);
 console.log("user: ", wallet.publicKey.toBase58());
@@ -56,13 +56,10 @@ const findVault = (): PublicKey => {
 export const vault = findVault();
 console.log("vault: ", vault.toBase58());
 
-export const findAssociatedTokenAddress = ({
-  walletAddress,
-  tokenMintAddress,
-}: {
-  walletAddress: PublicKey;
-  tokenMintAddress: PublicKey;
-}): PublicKey => {
+export const findAssociatedTokenAddress = (
+  walletAddress: PublicKey,
+  tokenMintAddress: PublicKey
+): PublicKey => {
   return PublicKey.findProgramAddressSync(
     [
       walletAddress.toBuffer(),
@@ -73,50 +70,20 @@ export const findAssociatedTokenAddress = ({
   )[0];
 };
 
-export const getAdressLookupTableAccounts = async (
-  keys: string[]
-): Promise<AddressLookupTableAccount[]> => {
-  const addressLookupTableAccountInfos =
-    await connection.getMultipleAccountsInfo(
-      keys.map((key) => new PublicKey(key))
-    );
-
-  return addressLookupTableAccountInfos.reduce((acc, accountInfo, index) => {
-    const addressLookupTableAddress = keys[index];
-    if (accountInfo) {
-      const addressLookupTableAccount = new AddressLookupTableAccount({
-        key: new PublicKey(addressLookupTableAddress),
-        state: AddressLookupTableAccount.deserialize(accountInfo.data),
-      });
-      acc.push(addressLookupTableAccount);
-    }
-
-    return acc;
-  }, new Array<AddressLookupTableAccount>());
-};
-
-export const instructionDataToTransactionInstruction = (
-  instructionPayload: any
-) => {
-  if (instructionPayload === null) {
-    return null;
-  }
-
-  return new TransactionInstruction({
-    programId: new PublicKey(instructionPayload.programId),
-    keys: instructionPayload.accounts.map((key) => ({
-      pubkey: new PublicKey(key.pubkey),
-      isSigner: key.isSigner,
-      isWritable: key.isWritable,
-    })),
-    data: Buffer.from(instructionPayload.data, "base64"),
-  });
-};
-
 export const execTx = async (transaction: Transaction) => {
   // Execute the transaction
 
   const rawTransaction = transaction.serialize();
+
+  const result = await connection.simulateTransaction(transaction as Transaction);
+  console.log('simulate result');
+  console.log(result);
+
+  if (result.value.err) {
+      console.log(result.value.err);
+      console.log(result.value.returnData);
+      return;
+  }
 
   const txid = await connection.sendRawTransaction(rawTransaction, {
     skipPreflight: true,

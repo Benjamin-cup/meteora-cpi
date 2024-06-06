@@ -11,12 +11,12 @@ use std::str::FromStr;
 pub mod utils;
 use utils::*;
 
-declare_id!("7eErExKc7XPvoqpTCitqv5PFs2GvcJAooK7NCPmYM55b");
+declare_id!("GUESbdzbRfwNuajJn27WpAiMoG8qif8rtLP13Pjy3Cza");
 
 pub const VAULT_SEED: &[u8] = b"vault-authority";
 
-const AMOUNT_IN: u64 = 1_000_000;
-const MIN_AMOUNT_OUT: u64 = 361429;
+const AMOUNT_IN: u64 = 100_000;
+const MIN_AMOUNT_OUT: u64 = 0;
 
 #[program]
 pub mod meteora_cpi {
@@ -41,8 +41,6 @@ pub mod meteora_cpi {
 
         let data = get_ix_data(AMOUNT_IN, MIN_AMOUNT_OUT);
 
-        msg!("data {:?}", data);
-
         let instruction = Instruction {
             program_id: meteora_program_id,
             accounts: vec![
@@ -58,7 +56,10 @@ pub mod meteora_cpi {
                 AccountMeta::new(ctx.accounts.meteora_program.key(), false),
                 AccountMeta::new_readonly(ctx.accounts.vault.key(), true),
                 AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.token_program.key(), false)
+                AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.event_authority.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.meteora_program.key(), false),
+                AccountMeta::new(ctx.accounts.account.key(), false),
             ],
             data
         };
@@ -73,7 +74,10 @@ pub mod meteora_cpi {
             ctx.accounts.token_y_mint.to_account_info(),
             ctx.accounts.oracle.to_account_info(),
             ctx.accounts.vault.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
             ctx.accounts.meteora_program.to_account_info(),
+            ctx.accounts.event_authority.to_account_info(),
+            ctx.accounts.account.to_account_info(),
         ];
 
         invoke_signed(&instruction, &account_infos, signer_seeds)?;
@@ -106,13 +110,13 @@ pub struct Initialize<'info> {
 pub struct TokenSwap<'info> {
 
     #[account(
-        mut, 
         seeds = [VAULT_SEED], 
         bump
     )]
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub vault: AccountInfo<'info>,
     
+    #[account(mut)]
     /// CHECK: 
     pub meteora_program: AccountInfo<'info>,
     pub token_program: Program<'info, Token>,
@@ -145,6 +149,13 @@ pub struct TokenSwap<'info> {
     #[account(mut)]
     /// CHECK: 
     pub oracle: AccountInfo<'info>,
+
+    /// CHECK: 
+    pub event_authority: AccountInfo<'info>,
+
+    #[account(mut)]
+    /// CHECK: 
+    pub account: AccountInfo<'info>,
 }
 
 

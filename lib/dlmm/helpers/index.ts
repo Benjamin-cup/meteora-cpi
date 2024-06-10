@@ -1,4 +1,4 @@
-import { BN, EventParser } from "@coral-xyz/anchor";
+import { BN, EventParser } from "anchor28";
 import {
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,

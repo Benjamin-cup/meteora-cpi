@@ -4,7 +4,7 @@ import {
   IdlTypes,
   Program,
   ProgramAccount,
-} from "@coral-xyz/anchor";
+} from "anchor28";
 import { LbClmm } from "../idl";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import Decimal from "decimal.js";

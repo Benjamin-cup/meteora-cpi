@@ -1,4 +1,4 @@
-import { BN } from "@coral-xyz/anchor";
+import { BN } from "anchor28";
 import { StrategyType, StrategyParameters } from "../types";
 import { autoFillXByWeight, autoFillYByWeight, toAmountAskSide, toAmountBidSide, toAmountBothSide } from "./weightToAmounts";
 import Decimal from "decimal.js";

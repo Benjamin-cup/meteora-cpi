@@ -1,4 +1,4 @@
-import { BN } from "@coral-xyz/anchor";
+import { BN } from "anchor28";
 import {
   BASIS_POINT_MAX,
   FEE_PRECISION,

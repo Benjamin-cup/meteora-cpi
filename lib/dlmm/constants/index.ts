@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { IDL } from "../idl";
-import { BN } from "@coral-xyz/anchor";
+import { BN } from "anchor28";
 
 export const LBCLMM_PROGRAM_IDS = {
   devnet: "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo",

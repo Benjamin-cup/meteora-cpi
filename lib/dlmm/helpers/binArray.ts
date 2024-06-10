@@ -1,4 +1,4 @@
-import { BN } from "@coral-xyz/anchor";
+import { BN } from "anchor28";
 import { PublicKey } from "@solana/web3.js";
 import { MAX_BIN_ARRAY_SIZE } from "../constants";
 import {

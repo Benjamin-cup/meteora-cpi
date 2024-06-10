@@ -1,3 +1,5 @@
+import BN from "bn.js";
+import { DLMM } from "../lib/dlmm";
 import {
   vault,
   wallet,
@@ -5,14 +7,14 @@ import {
   execTx,
   program,
   findAssociatedTokenAddress,
-  USDC_ADDRESS,
-  JLP_ADDRESS,
+  JLP_USDC_POOL,
+  METEORA_PROGRAM,
 } from "./helper";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import {
   PublicKey,
   Transaction,
   ComputeBudgetProgram,
+  AccountMeta,
 } from "@solana/web3.js";
 
 const main = async () => {
@@ -49,51 +51,58 @@ const initialize = async () => {
 };
 
 const tokenSwap = async () => {
-  const userTokenIn = findAssociatedTokenAddress(vault, USDC_ADDRESS);
-  console.log("userTokenIn: ", userTokenIn.toBase58());
-
-  const userTokenOut = findAssociatedTokenAddress(vault, JLP_ADDRESS);
-  console.log("userTokenOut: ", userTokenOut.toBase58());
-
-  const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
-    units: 100000,
+  const dlmmPool = await DLMM.create(connection, JLP_USDC_POOL, {
+    cluster: "mainnet-beta",
   });
 
-  const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-    microLamports: 1000000,
+  //  Swap quote
+  const swapYtoX = true;
+  const binArrayAccounts = await dlmmPool.getBinArrayForSwap(swapYtoX);
+
+  const swapQuote = dlmmPool.swapQuote(
+    new BN(1_000_000),
+    swapYtoX,
+    new BN(10),
+    binArrayAccounts
+  );
+
+  const { tokenXMint, tokenYMint, reserveX, reserveY, activeId, oracle } =
+    await dlmmPool.fetchAccounts(JLP_USDC_POOL);
+
+  const userTokenIn = findAssociatedTokenAddress(vault, tokenYMint);
+  console.log("userTokenIn: ", userTokenIn.toBase58());
+
+  const userTokenOut = findAssociatedTokenAddress(vault, tokenXMint);
+  console.log("userTokenOut: ", userTokenOut.toBase58());
+
+  const binArrays: AccountMeta[] = swapQuote.binArraysPubkey.map((pubkey) => {
+    return {
+      isSigner: false,
+      isWritable: true,
+      pubkey,
+    };
   });
 
   const transaction = new Transaction();
 
   transaction
-    .add(addPriorityFee)
-    .add(modifyComputeUnits)
+    .add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000000 }))
+    .add(ComputeBudgetProgram.setComputeUnitLimit({ units: 100000 }))
     .add(
       await program.methods
         .tokenSwap()
         .accounts({
-          lbPair: new PublicKey("5cuy7pMhTPhVZN9xuhgSbykRb986siGJb6vnEtkuBrSU"),
-          reserveX: new PublicKey(
-            "9wbTcHco8daQYxVPWn1eqDQe2YPY3ak3gPfQuYAcZ4PJ"
-          ),
-          reserveY: new PublicKey(
-            "Cpwo6h4koL8pC87R17g1dX8zfEQ6Pnv3AHXGPpNJqBuf"
-          ),
+          lbPair: JLP_USDC_POOL,
+          reserveX,
+          reserveY,
           userTokenIn,
           userTokenOut,
-          tokenXMint: JLP_ADDRESS,
-          tokenYMint: USDC_ADDRESS,
-          oracle: new PublicKey("2NBaawB9aeYocWvyiECcDxSSwcyJd1B8oaHzpyEFbapc"),
-          meteoraProgram: new PublicKey(
-            "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo"
-          ),
-          eventAuthority: new PublicKey(
-            "D1ZN9Wj1fRSUQfCjhvnu1hqDMT7hzjzBBpi12nVniYD6"
-          ),
-          account: new PublicKey(
-            "6z44Pf3zvHtebfdKnFrj9PsLSe42WfzNpXr7v1GqS6u"
-          ),
+          tokenXMint,
+          tokenYMint,
+          oracle,
+          meteoraProgram: METEORA_PROGRAM,
         })
+        .remainingAccounts(binArrays)
         .transaction()
     );
 

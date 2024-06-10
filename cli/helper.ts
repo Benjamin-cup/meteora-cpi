@@ -18,8 +18,8 @@ require("dotenv").config();
 
 const VAULT_SEED = "vault-authority";
 
-export const JLP_ADDRESS = new PublicKey("27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4");
-export const USDC_ADDRESS = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+export const JLP_USDC_POOL = new PublicKey("5cuy7pMhTPhVZN9xuhgSbykRb986siGJb6vnEtkuBrSU");
+export const METEORA_PROGRAM = new PublicKey("LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo");
 
 const walletKeypair = Keypair.fromSecretKey(
   Uint8Array.from(

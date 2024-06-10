@@ -1,4 +1,4 @@
-import { BN } from "@coral-xyz/anchor";
+import { BN } from "anchor28";
 import gaussian, { Gaussian } from "gaussian";
 import { BASIS_POINT_MAX } from "../constants";
 import Decimal from "decimal.js";

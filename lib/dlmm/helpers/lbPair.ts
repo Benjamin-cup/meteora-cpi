@@ -1,4 +1,4 @@
-import { AnchorProvider, Program } from "@coral-xyz/anchor";
+import { AnchorProvider, Program } from "anchor28";
 import { Cluster, Connection, PublicKey } from "@solana/web3.js";
 import { IDL } from "../idl";
 import { LBCLMM_PROGRAM_IDS } from "../constants";

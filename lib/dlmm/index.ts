@@ -64,7 +64,7 @@ import {
   PositionV2,
   SeedLiquidityResponse,
 } from "./types";
-import { AnchorProvider, BN, Program } from "@coral-xyz/anchor";
+import { AnchorProvider, BN, Program } from "anchor28";
 import {
   binIdToBinArrayIndex,
   chunks,
@@ -96,7 +96,7 @@ import {
   derivePosition,
   deriveLbPair,
 } from "./helpers";
-import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import { bs58 } from "anchor28/dist/cjs/utils/bytes";
 import Decimal from "decimal.js";
 import {
   AccountLayout,
@@ -3327,6 +3327,10 @@ export class DLMM {
       priceImpact,
       binArraysPubkey: [...binArraysForSwap.keys()],
     };
+  }
+
+  public async fetchAccounts(lbPair: PublicKey) {
+    return await this.program.account.lbPair.fetch(lbPair);
   }
 
   /**

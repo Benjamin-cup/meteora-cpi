@@ -1,6 +1,6 @@
 
 import Decimal from "decimal.js";
-import { BN } from "@coral-xyz/anchor";
+import { BN } from "anchor28";
 import { getPriceOfBinByBinId } from "./weight";
 
 export function toAmountBidSide(

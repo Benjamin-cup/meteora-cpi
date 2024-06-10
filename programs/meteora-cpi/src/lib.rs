@@ -27,9 +27,9 @@ pub mod meteora_cpi {
         Ok(())
     }
 
-    pub fn token_swap(ctx: Context<TokenSwap>) -> Result<()> {
+    pub fn token_swap<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, TokenSwap<'info>>) -> Result<()> {
         msg!("yo, this is microgift");
-
+        
         let vault_bump = ctx.bumps.vault.to_le_bytes();
         let signer_seeds: &[&[&[u8]]] = &[
             &[VAULT_SEED, vault_bump.as_ref()]
@@ -39,32 +39,40 @@ pub mod meteora_cpi {
 
         let meteora_program_id: Pubkey = Pubkey::from_str(METEORA_PROGRAM_KEY).unwrap();
 
+        let mut accounts: Vec<AccountMeta> = vec![
+            AccountMeta::new(ctx.accounts.lb_pair.key(), false),
+            AccountMeta::new_readonly(ctx.accounts.meteora_program.key(), false),
+            AccountMeta::new(ctx.accounts.reserve_x.key(), false),
+            AccountMeta::new(ctx.accounts.reserve_y.key(), false),
+            AccountMeta::new(ctx.accounts.user_token_in.key(), false),
+            AccountMeta::new(ctx.accounts.user_token_out.key(), false),
+            AccountMeta::new_readonly(ctx.accounts.token_x_mint.key(), false),
+            AccountMeta::new_readonly(ctx.accounts.token_y_mint.key(), false),
+            AccountMeta::new(ctx.accounts.oracle.key(), false),
+            AccountMeta::new(ctx.accounts.meteora_program.key(), false),
+            AccountMeta::new_readonly(ctx.accounts.vault.key(), true),
+            AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
+            AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
+            AccountMeta::new_readonly(ctx.accounts.event_authority.key(), false),
+            AccountMeta::new_readonly(ctx.accounts.meteora_program.key(), false)
+        ];
+        accounts.extend(
+            ctx.remaining_accounts.iter().map(|acc| AccountMeta {
+                pubkey: *acc.key,
+                is_signer: false,
+                is_writable: true
+            })
+        );
+
         let data = get_ix_data(AMOUNT_IN, MIN_AMOUNT_OUT);
 
         let instruction = Instruction {
             program_id: meteora_program_id,
-            accounts: vec![
-                AccountMeta::new(ctx.accounts.lb_pair.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.meteora_program.key(), false),
-                AccountMeta::new(ctx.accounts.reserve_x.key(), false),
-                AccountMeta::new(ctx.accounts.reserve_y.key(), false),
-                AccountMeta::new(ctx.accounts.user_token_in.key(), false),
-                AccountMeta::new(ctx.accounts.user_token_out.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.token_x_mint.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.token_y_mint.key(), false),
-                AccountMeta::new(ctx.accounts.oracle.key(), false),
-                AccountMeta::new(ctx.accounts.meteora_program.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.vault.key(), true),
-                AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.event_authority.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.meteora_program.key(), false),
-                AccountMeta::new(ctx.accounts.account.key(), false),
-            ],
+            accounts,
             data
         };
 
-        let account_infos = [
+        let mut account_infos: Vec<AccountInfo<'info>> = vec![
             ctx.accounts.lb_pair.to_account_info(),
             ctx.accounts.reserve_x.to_account_info(),
             ctx.accounts.reserve_y.to_account_info(),
@@ -76,9 +84,11 @@ pub mod meteora_cpi {
             ctx.accounts.vault.to_account_info(),
             ctx.accounts.token_program.to_account_info(),
             ctx.accounts.meteora_program.to_account_info(),
-            ctx.accounts.event_authority.to_account_info(),
-            ctx.accounts.account.to_account_info(),
+            ctx.accounts.event_authority.to_account_info()
         ];
+
+        account_infos.extend_from_slice(ctx.remaining_accounts);
+
 
         invoke_signed(&instruction, &account_infos, signer_seeds)?;
 
@@ -105,7 +115,7 @@ pub struct Initialize<'info> {
     pub system_program: Program<'info, System>
 }
 
-
+#[event_cpi]
 #[derive(Accounts)]
 pub struct TokenSwap<'info> {
 
@@ -148,14 +158,7 @@ pub struct TokenSwap<'info> {
 
     #[account(mut)]
     /// CHECK: 
-    pub oracle: AccountInfo<'info>,
-
-    /// CHECK: 
-    pub event_authority: AccountInfo<'info>,
-
-    #[account(mut)]
-    /// CHECK: 
-    pub account: AccountInfo<'info>,
+    pub oracle: AccountInfo<'info>
 }
 
 

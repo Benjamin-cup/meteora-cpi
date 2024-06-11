@@ -13,17 +13,19 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
+import { LBCLMM_PROGRAM_IDS } from "../lib/dlmm/constants";
 
 require("dotenv").config();
 
 const VAULT_SEED = "vault-authority";
 
-export const JLP_USDC_POOL = new PublicKey("5cuy7pMhTPhVZN9xuhgSbykRb986siGJb6vnEtkuBrSU");
-export const METEORA_PROGRAM = new PublicKey("LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo");
+export const JLP_ADDRESS = new PublicKey("27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4");
+export const USDC_ADDRESS = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+export const METEORA_PROGRAM = new PublicKey(LBCLMM_PROGRAM_IDS["mainnet-beta"]);
 
 const walletKeypair = Keypair.fromSecretKey(
   Uint8Array.from(
-    JSON.parse(fs.readFileSync(process.env.KEYPAIR || "", "utf-8"))
+    JSON.parse(fs.readFileSync(process.env.PRIVATE_KEY || "", "utf-8"))
   ),
   { skipValidation: true }
 );
@@ -36,14 +38,14 @@ const config: ConnectionConfig = {
   confirmTransactionInitialTimeout: 60000,
 };
 
-export const connection = new Connection(process.env.RPC_URL, config);
+export const connection = new Connection(process.env.RPC, config);
 export const provider = new AnchorProvider(connection, wallet, {
   commitment: "confirmed",
 });
 anchor.setProvider(provider);
 export const program = anchor.workspace.MeteoraCpi as Program<MeteoraCpi>;
 
-console.log("rpc: ", process.env.RPC_URL);
+console.log("rpc: ", process.env.RPC);
 console.log("user: ", wallet.publicKey.toBase58());
 console.log("program: ", program.programId.toBase58());
 

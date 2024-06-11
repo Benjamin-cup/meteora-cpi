@@ -11,7 +11,7 @@ use std::str::FromStr;
 pub mod utils;
 use utils::*;
 
-declare_id!("GUESbdzbRfwNuajJn27WpAiMoG8qif8rtLP13Pjy3Cza");
+declare_id!("43cXKeawG2C13yMH4NzgfXPMaRVPEggQm1aqsKxoSJia");
 
 pub const VAULT_SEED: &[u8] = b"vault-authority";
 
@@ -22,10 +22,6 @@ const MIN_AMOUNT_OUT: u64 = 0;
 pub mod meteora_cpi {
 
     use super::*;
-
-    pub fn initialize(_ctx: Context<Initialize>) -> Result<()> {
-        Ok(())
-    }
 
     pub fn token_swap<'a, 'b, 'c, 'info>(ctx: Context<'a, 'b, 'c, 'info, TokenSwap<'info>>) -> Result<()> {
         msg!("yo, this is microgift");
@@ -96,26 +92,6 @@ pub mod meteora_cpi {
     }
 }
 
-
-#[derive(Accounts)]
-pub struct Initialize<'info> {
-    #[account(mut)]
-    pub admin: Signer<'info>,
-
-    #[account(
-        init,
-        seeds = [VAULT_SEED.as_ref()],
-        bump,
-        space = 0,
-        payer = admin
-    )]
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub vault: AccountInfo<'info>,
-
-    pub system_program: Program<'info, System>
-}
-
-#[event_cpi]
 #[derive(Accounts)]
 pub struct TokenSwap<'info> {
 
@@ -158,7 +134,10 @@ pub struct TokenSwap<'info> {
 
     #[account(mut)]
     /// CHECK: 
-    pub oracle: AccountInfo<'info>
+    pub oracle: AccountInfo<'info>,
+    
+    /// CHECK: 
+    pub event_authority: AccountInfo<'info>
 }
 
 

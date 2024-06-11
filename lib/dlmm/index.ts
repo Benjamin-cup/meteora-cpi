@@ -162,6 +162,38 @@ export class DLMM {
     return program.account.lbPair.all();
   }
 
+  public static async getLbPairsForTokens(
+    connection: Connection,
+    tokenX: PublicKey,
+    tokenY: PublicKey,
+    opt?: Opt
+  ): Promise<LbPairAccount[]> {
+    const provider = new AnchorProvider(
+      connection,
+      {} as any,
+      AnchorProvider.defaultOptions()
+    );
+    const program = new Program(
+      IDL,
+      opt?.programId ?? LBCLMM_PROGRAM_IDS[opt?.cluster ?? "mainnet-beta"],
+      provider
+    );
+
+    return program.account.lbPair.all([
+      {
+       memcmp: {
+         offset: 88,
+         bytes: tokenX.toBase58(),
+       }
+      }, {
+       memcmp: {
+         offset: 120,
+         bytes: tokenY.toBase58(),
+       }
+      }
+     ]);
+  }
+
   public static async getPairPubkeyIfExists(
     connection: Connection,
     tokenX: PublicKey,

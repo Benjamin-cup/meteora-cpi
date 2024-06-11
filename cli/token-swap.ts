@@ -7,8 +7,9 @@ import {
   execTx,
   program,
   findAssociatedTokenAddress,
-  JLP_USDC_POOL,
   METEORA_PROGRAM,
+  JLP_ADDRESS,
+  USDC_ADDRESS,
 } from "./helper";
 import {
   PublicKey,
@@ -16,42 +17,34 @@ import {
   ComputeBudgetProgram,
   AccountMeta,
 } from "@solana/web3.js";
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import { LbPairAccount } from "../lib/dlmm/types";
+import { findProgramAddress } from "@raydium-io/raydium-sdk";
 
 const main = async () => {
-  // await initialize();
-  await tokenSwap();
-};
 
-const initialize = async () => {
-  const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-    microLamports: 20000,
-  });
+  const lbPairs = await DLMM.getLbPairsForTokens(connection, JLP_ADDRESS, USDC_ADDRESS);
 
-  const transaction = new Transaction();
-
-  transaction.add(addPriorityFee).add(
-    await program.methods
-      .initialize()
-      .accounts({
-        admin: wallet.publicKey,
-      })
-      .transaction()
+  const tokenAmounts = await Promise.all(
+    lbPairs.map(async (lbPair) => await connection.getTokenAccountBalance(lbPair.account.reserveX))
   );
 
-  const blockhash = await connection.getLatestBlockhash();
-  transaction.recentBlockhash = blockhash.blockhash;
-  transaction.feePayer = wallet.publicKey;
-  const signedTx = await wallet.signTransaction(transaction);
+  const maxIndex = tokenAmounts.reduce((maxIdx, current, idx, arr) => {
+    const currentValue = current.value.uiAmount;
+    const maxValue = arr[maxIdx].value.uiAmount;
+    
+    if (currentValue === null) return maxIdx;
+    if (maxValue === null || currentValue > maxValue) return idx;
+    
+    return maxIdx;
+  }, 0);
 
-  try {
-    await execTx(signedTx);
-  } catch (e) {
-    console.log(e);
-  }
+  await tokenSwap(lbPairs[maxIndex]);
 };
 
-const tokenSwap = async () => {
-  const dlmmPool = await DLMM.create(connection, JLP_USDC_POOL, {
+const tokenSwap = async (lbPair: LbPairAccount) => {
+  
+  const dlmmPool = await DLMM.create(connection, lbPair.publicKey, {
     cluster: "mainnet-beta",
   });
 
@@ -66,13 +59,15 @@ const tokenSwap = async () => {
     binArrayAccounts
   );
 
-  const { tokenXMint, tokenYMint, reserveX, reserveY, activeId, oracle } =
-    await dlmmPool.fetchAccounts(JLP_USDC_POOL);
+  const { tokenXMint, tokenYMint, reserveX, reserveY, oracle } = lbPair.account;
 
   const userTokenIn = findAssociatedTokenAddress(vault, tokenYMint);
-  console.log("userTokenIn: ", userTokenIn.toBase58());
-
   const userTokenOut = findAssociatedTokenAddress(vault, tokenXMint);
+  const eventAuthority = findProgramAddress([Buffer.from("__event_authority")], METEORA_PROGRAM).publicKey;
+
+  console.log("tokenIn: ", tokenYMint.toBase58());
+  console.log("tokenOut: ", tokenXMint.toBase58());
+  console.log("userTokenIn: ", userTokenIn.toBase58());
   console.log("userTokenOut: ", userTokenOut.toBase58());
 
   const binArrays: AccountMeta[] = swapQuote.binArraysPubkey.map((pubkey) => {
@@ -92,7 +87,7 @@ const tokenSwap = async () => {
       await program.methods
         .tokenSwap()
         .accounts({
-          lbPair: JLP_USDC_POOL,
+          lbPair: lbPair.publicKey,
           reserveX,
           reserveY,
           userTokenIn,
@@ -101,6 +96,7 @@ const tokenSwap = async () => {
           tokenYMint,
           oracle,
           meteoraProgram: METEORA_PROGRAM,
+          eventAuthority
         })
         .remainingAccounts(binArrays)
         .transaction()
